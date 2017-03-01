@@ -86,11 +86,14 @@
 
 (defmethod print-object ((m model) stream)
   (print-unreadable-object (m stream :type t)
-    (with-slots (cells pointer) m
-      (format stream ":cells ~a :pointer ~d " cells pointer))))
+    (with-slots (cells pointer commands) m
+      (format stream ":pointer ~d  :cells ~a :commands ~a" pointer cells  commands))))
 
 (defun get-current-cell-value (model)
   (aref (cells model) (pointer model)))
+
+(defun cell-value (model pointer)
+  (aref (cells model) pointer))
 
 ;;; Commands
 
@@ -99,13 +102,26 @@
      collect (parse-command char)))
 
 (defun parse-command (char)
-  (cond ((char= char #\+) #'command-increase)
-        ((char= char #\-) #'command-decrease)
-        ((char= char #\>) #'command-increase-pointer)
-        ((char= char #\<) #'command-decrease-pointer)
-        ((char= char #\.) #'command-run-output-cb)
-        ((char= char #\,) #'command-run-input-cb)
+  (cond ((char= char #\+) 'inc)
+        ((char= char #\-) 'dec)
+        ((char= char #\>) 'inc-p)
+        ((char= char #\<) 'dec-p)
+        ((char= char #\.) 'output-cb)
+        ((char= char #\,) 'input-cb)
+        ((char= char #\[) 'start-loop)
+        ((char= char #\]) 'end-loop)
         (t (error "Unknown brainfuck command: ~@c" char))))
+
+(defun get-func (command)
+  (cond ((equal command 'inc)   #'command-increase)
+        ((equal command 'dec)   #'command-decrease)
+        ((equal command 'inc-p) #'command-increase-pointer)
+        ((equal command 'dec-p) #'command-decrease-pointer)
+        ((equal command 'output-cb)  #'command-run-output-cb)
+        ((equal command 'input-cb)  #'command-run-input-cb)
+        ((equal command 'start-loop)  #'command-start-loop)
+        ((equal command 'end-loop)  #'command-noop)
+        (t (error "Unknown brainfuck command: ~@a" command))))
 
 (defun command-increase (model)
   (setf (aref (cells model) (pointer model)) ;; position
@@ -131,9 +147,33 @@
     (setf (aref (cells model) (pointer model))
           new-val))) 
 
+(defun command-noop (x)
+  (declare (ignore x)))
+
+(defun run-cmd (model c)
+  (funcall (get-func c) model))
+
+(defun command-start-loop (model)
+  (let ((beg-pos (pointer model))
+        (loop-commands (loop-commands model)))
+    (loop :while (> (cell-value model beg-pos) 0) 
+       :do (progn
+             (setf (pointer model) beg-pos)
+             (loop :for c :in loop-commands
+                :do (run-cmd model c)))
+       :finally (setf (commands model)
+                      (subseq (commands model) (1+ (length loop-commands)))))))
+
+(defun loop-commands (model)
+  (butlast (loop :for c :in (commands model)
+              :collect c
+              :until (equalp c 'end-of-loop))))
+
 (defun run-model (model)
-  (loop :for c :in (commands model)
-     :do (funcall c model)
+  (loop :while (> (length (commands model)) 0) 
+     :do (let ((cmd (car (commands model))))
+           (setf (commands model) (cdr (commands model)))  
+           (run-cmd model cmd))
      :finally (return model)))
 
 (defun bf (bf-string)
@@ -144,7 +184,12 @@
 
 (pprint (parse-commands "++,++"))
 
+(pprint (parse-commands "++[-]++"))
+
+
 (pprint (bf "++++"))
+
+(pprint (bf "++[-]"))
 
 (pprint (bf "++->+<>>"))
 
@@ -166,9 +211,8 @@
       (run-test "++->" 1 '(1 0 0 0 0 0 0 0))
       (run-test "++-><" 0 '(1 0 0 0 0 0 0 0))
       (run-test "++>+++++" 1 '(2 5 0 0 0 0 0 0))
-      ;(run-test "+[-]" 0 '(0 0 0 0 0 0 0 0))
-      ;(run-test "++>+++++[<+>-]" 0 '(1 0 0 0 0 0 0 0))
-
+      (run-test "++[-]" 0 '(0 0 0 0 0 0 0 0))
+      (run-test "++>+++++[<+>-]" 1 '(7 0 0 0 0 0 0 0))
       t)))
 
 
