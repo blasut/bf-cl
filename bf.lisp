@@ -82,7 +82,7 @@
   (if (null (output-cb m))
       (setf (output-cb m) (lambda (x) (print x))))
   (if (null (input-cb m))
-      (setf (input-cb m) (lambda () (progn (print "please insert new byte: ") (- (char-int (read-char)) (char-int #\0)))))))
+      (setf (input-cb m) (lambda () (progn (print "please insert new char: ") (char-int (read-char)))))))
 
 (defmethod print-object ((m model) stream)
   (print-unreadable-object (m stream :type t)
@@ -180,19 +180,6 @@
   (let ((model (make-instance 'model :commands (parse-commands bf-string))))
     (run-model model)))
 
-(pprint (parse-commands "++-><.,"))
-
-(pprint (parse-commands "++,++"))
-
-(pprint (parse-commands "++[-]++"))
-
-
-(pprint (bf "++++"))
-
-(pprint (bf "++[-]"))
-
-(pprint (bf "++->+<>>"))
-
 
 ;;; TESTS
 
@@ -217,3 +204,24 @@
 
 
 (run-tests)
+
+(pprint (parse-commands "++-><.,"))
+
+(pprint (parse-commands "++,++"))
+
+(pprint (parse-commands "++[-]++"))
+
+
+(bf "++,++")
+(bf "++,")
+
+(pprint (bf "++++"))
+
+(pprint (bf "++[-]"))
+
+(pprint (bf "++->+<>>"))
+
+(loop :for c :across (cells (bf "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")) :do (princ (code-char c)))
+;; Prints 9
+
+
