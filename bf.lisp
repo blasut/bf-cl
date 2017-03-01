@@ -26,6 +26,30 @@
 ;; [2, 0, 0, 0, 0, 0, 0, 0]
 ;;     ^
 
+;;;;; LOOP
+;;
+;; START:
+;; [1, 1, 0, 0, 0, 0, 0, 0]
+;;     ^
+;; Command:
+;; [-]
+;;
+;; After:
+;; [1, 0, 0, 0, 0, 0, 0, 0]
+;;     ^
+;;
+;; When we see a '[', it means that the pointer should not change, and that all commands till the ']' should run with the pointer starting at the cell before '[', until the cell value of the cell before the '[' is zero 
+;;
+;; A loop is saying: run these commands between '[' and ']' starting the pointer before the '[' 
+;; Could we say that looping is just running commands withouth changing the pointer?
+;; No, because other commands do change the pointer, maybe a loop takes the model and the commands
+;; So a loop:
+;; - If the value of the cell the pointer is looking at is 0, terminate
+;;   - terminate means continue with the code reading AFTER the loop
+;;   - the CELL pointer should be saved to the beginning value
+;; - If the value of the cell the pointer is looking at is NOT 0:
+;;   - Save the pointer
+;;   - Take the commands between '[' & ']' and run the as usual. 
 
 ;; Model
 
@@ -48,7 +72,11 @@
    (input-cb
     :initarg :input
     :initform nil
-    :accessor input-cb)))
+    :accessor input-cb)
+   (commands
+    :initarg :commands
+    :initform '()
+    :accessor commands)))
 
 (defmethod initialize-instance :after ((m model) &rest args)
   (if (null (output-cb m))
@@ -103,19 +131,20 @@
     (setf (aref (cells model) (pointer model))
           new-val))) 
 
+(defun run-model (model)
+  (loop :for c :in (commands model)
+     :do (funcall c model)
+     :finally (return model)))
+
 (defun bf (bf-string)
-  (let ((model (make-instance 'model))
-        (commands (parse-commands bf-string)))
-    (progn
-      (loop :for command :in commands
-         :do (funcall command model))
-      model)))
+  (let ((model (make-instance 'model :commands (parse-commands bf-string))))
+    (run-model model)))
 
 (pprint (parse-commands "++-><.,"))
 
 (pprint (parse-commands "++,++"))
 
-(pprint (bf "++,++"))
+(pprint (bf "++++"))
 
 (pprint (bf "++->+<>>"))
 
@@ -136,6 +165,11 @@
       (run-test "++-" 0 '(1 0 0 0 0 0 0 0))
       (run-test "++->" 1 '(1 0 0 0 0 0 0 0))
       (run-test "++-><" 0 '(1 0 0 0 0 0 0 0))
-      )))
+      (run-test "++>+++++" 1 '(2 5 0 0 0 0 0 0))
+      ;(run-test "+[-]" 0 '(0 0 0 0 0 0 0 0))
+      ;(run-test "++>+++++[<+>-]" 0 '(1 0 0 0 0 0 0 0))
+
+      t)))
+
 
 (run-tests)
