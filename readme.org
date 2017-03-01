@@ -1,0 +1,14 @@
+* Brainfuck in CL
+
+Something I hacked together.
+
+So far the code is shiet, but fun to try.
+
+I'm sort of liking the idea of having a "IR" with a flat list of symbols, than just doing two loops over the the "IR" and mapping to the correct command.
+
+Ideas:
+
+- Clean up code
+- Print the result using ASCII 8bit 
+- Make the array dynamic in size
+- Validate the numbers, between 0-255
