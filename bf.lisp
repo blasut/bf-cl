@@ -71,6 +71,12 @@
 (pprint (parse-commands "++-"))
 (pprint (bf "++-"))
 
-(assert (equalp (cells (bf "++")) (cells (make-instance 'model :cells (make-array 8 :initial-contents '(2 0 0 0 0 0 0 0))))))
-(assert (equalp (cells (bf "++-")) (cells (make-instance 'model :cells (make-array 8 :initial-contents '(1 0 0 0 0 0 0 0))))))
+;;; TESTS
+
+(defun run-tests()
+  (flet ((run-test (str init-cont)
+           (assert (equalp (cells (bf str)) (cells (make-instance 'model :cells (make-array 8 :initial-contents init-cont)))))))
+    (progn
+      (run-test "++"  '(2 0 0 0 0 0 0 0))
+      (run-test "++-" '(1 0 0 0 0 0 0 0)))))
 
