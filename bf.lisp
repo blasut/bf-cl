@@ -74,9 +74,16 @@
 ;;; TESTS
 
 (defun run-tests()
-  (flet ((run-test (str init-cont)
-           (assert (equalp (cells (bf str)) (cells (make-instance 'model :cells (make-array 8 :initial-contents init-cont)))))))
+  (flet ((run-test (str pointer init-cont)
+           (let ((model (bf str))
+                 (test (make-instance 'model
+                                      :pointer pointer
+                                      :cells (make-array 8 :initial-contents init-cont))))
+             (progn
+               (assert (equalp (cells model)   (cells test)))
+               (assert (equalp (pointer model) (pointer test)))))))
     (progn
-      (run-test "++"  '(2 0 0 0 0 0 0 0))
-      (run-test "++-" '(1 0 0 0 0 0 0 0)))))
+      (run-test "++"  0 '(2 0 0 0 0 0 0 0))
+      (run-test "++-" 0 '(1 0 0 0 0 0 0 0)))))
 
+(run-tests)
