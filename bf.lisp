@@ -38,6 +38,11 @@
     :initform 0
     :accessor pointer)))
 
+(defmethod print-object ((m model) stream)
+  (print-unreadable-object (m stream :type t)
+    (with-slots (cells pointer) m
+      (format stream ":cells ~a :pointer ~d " cells pointer))))
+
 (defun parse-commands (string)
   (loop :for char :across string
      collect (parse-command char)))
@@ -58,7 +63,6 @@
 (defun bf (bf-string)
   (let ((model (make-instance 'model))
         (commands (parse-commands bf-string)))
-    (pprint (list commands (cells model)))
     (progn
       (loop :for command :in commands
          :do (funcall command model))
@@ -68,4 +72,5 @@
 (pprint (bf "++-"))
 
 (assert (equalp (cells (bf "++")) (cells (make-instance 'model :cells (make-array 8 :initial-contents '(2 0 0 0 0 0 0 0))))))
+(assert (equalp (cells (bf "++-")) (cells (make-instance 'model :cells (make-array 8 :initial-contents '(1 0 0 0 0 0 0 0))))))
 
