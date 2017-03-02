@@ -184,6 +184,9 @@
            (run-cmd model cmd))
      :finally (return model)))
 
+(defun model->chars (model)
+  (loop :for c :across (cells model) :collect (code-char c)))
+
 (defun bf (bf-string)
   (let ((model (make-instance 'model :commands (parse-commands bf-string))))
     (run-model model)))
@@ -192,7 +195,7 @@
   (print (bf-run bf-string)))
 
 (defun bf-run (bf-string)
-  (coerce (loop :for c :across (cells (bf bf-string)) :collect (code-char c)) 'string))
+  (coerce (model->chars (bf bf-string)) 'string))
 
 ;;; TESTS
 
@@ -202,8 +205,10 @@
                  (test (make-instance 'model
                                       :pointer pointer)))
              (progn
+               (format t "Running test: ~a ~&Expected: ~%Cells: ~a to return ~a ~&Pointer: ~a to return ~a ~2%" str cells (cells model) pointer (pointer model))
                (assert (equalp (cells model)   cells))
                (assert (equalp (pointer model) (pointer test)))))))
+    
     (progn
       (run-test  :pointer 0 :str "++"             :cells #(2))
       (run-test  :pointer 0 :str "++-"            :cells #(1))
