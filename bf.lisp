@@ -188,11 +188,11 @@
   (let ((model (make-instance 'model :commands (parse-commands bf-string))))
     (run-model model)))
 
-(defun bf-print (model)
-  (loop :for c :across (cells model) :do (princ (code-char c))))
+(defun bf-print (bf-string)
+  (print (bf-run bf-string)))
 
 (defun bf-run (bf-string)
-  (bf-print (bf bf-string)))
+  (coerce (loop :for c :across (cells (bf bf-string)) :collect (code-char c)) 'string))
 
 ;;; TESTS
 
