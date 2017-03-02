@@ -54,7 +54,7 @@
 ;; Model
 
 (defun make-cells ()
-  (make-array 8 :initial-element 0))  
+  (make-array 1 :element-type 'fixnum))  
 
 (defclass model ()
   ((cells
@@ -132,8 +132,16 @@
         (1- (aref (cells model) (pointer model))))) ;; new value
 
 (defun command-increase-pointer (model)
-  (setf (pointer model)
-        (1+ (pointer model))))
+  ;; pointer is zero based
+  (check-type (cells model) (simple-array fixnum 1))
+  (let* ((pos (pointer model))
+         (new-pos (1+ pos)))
+    (if (= new-pos (length (cells model)))
+        (let ((new (make-array (1+ (length (cells model))) :element-type 'fixnum)))
+          (declare (optimize speed))
+          (replace new (cells model) :start1 0 :end1 new-pos)
+          (setf (cells model) new)))
+    (setf (pointer model) new-pos)))
 
 (defun command-decrease-pointer (model)
   (setf (pointer model)
