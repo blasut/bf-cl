@@ -38,68 +38,25 @@
 ;; [1, 0, 0, 0, 0, 0, 0, 0]
 ;;     ^
 ;;
-;; When we see a '[', it means that the pointer should not change, and that all commands till the ']' should run with the pointer starting at the cell before '[', until the cell value of the cell before the '[' is zero 
-;;
-;; A loop is saying: run these commands between '[' and ']' starting the pointer before the '[' 
-;; Could we say that looping is just running commands withouth changing the pointer?
-;; No, because other commands do change the pointer, maybe a loop takes the model and the commands
-;; So a loop:
-;; - If the value of the cell the pointer is looking at is 0, terminate
-;;   - terminate means continue with the code reading AFTER the loop
-;;   - the CELL pointer should be saved to the beginning value
-;; - If the value of the cell the pointer is looking at is NOT 0:
-;;   - Save the pointer
-;;   - Take the commands between '[' & ']' and run the as usual. 
+
+;; [0,0,0,0,0,0]
+;;  ptr
+;; instrc: [ == läs tills matchande ]
+;;         ]
+;; Vad är matchande ]? Det är beroende på hur många [ innan.
+;; Definera matchande:
+;; En matchande bracket är ... 
+
+(in-package :cl-user)
+(defpackage bf
+  (:use :cl
+        :prove))
+(in-package :bf)
 
 ;; Model
 
 (defun make-cells ()
   (make-array 1 :element-type 'fixnum))  
-
-(defclass model ()
-  ((cells
-    :initarg :cells
-    :initform (make-cells)
-    :accessor cells)
-   (pointer
-    :initarg :pointer
-    :initform 0
-    :accessor pointer)
-   (output-cb
-    :initarg :output
-    :initform nil
-    :accessor output-cb)
-   (input-cb
-    :initarg :input
-    :initform nil
-    :accessor input-cb)
-   (commands
-    :initarg :commands
-    :initform '()
-    :accessor commands)))
-
-(defun default-input ()
-  (progn (print "please insert new char: ") (char-int (read-char))))
-
-(defun default-output (x)
-  (format t "~a" (code-char x)))
-
-(defmethod initialize-instance :after ((m model) &rest args)
-  (if (null (output-cb m))
-      (setf (output-cb m) #'default-output))
-  (if (null (input-cb m))
-      (setf (input-cb m) #'default-input)))
-
-(defmethod print-object ((m model) stream)
-  (print-unreadable-object (m stream :type t)
-    (with-slots (cells pointer commands) m
-      (format stream ":pointer ~d  :cells ~a :commands ~a" pointer cells  commands))))
-
-(defun get-current-cell-value (model)
-  (aref (cells model) (pointer model)))
-
-(defun cell-value (model pointer)
-  (aref (cells model) pointer))
 
 ;;; Commands
 
@@ -114,122 +71,83 @@
         ((char= char #\<) 'dec-p)
         ((char= char #\.) 'output-cb)
         ((char= char #\,) 'input-cb)
-        ((char= char #\[) 'start-loop)
-        ((char= char #\]) 'end-loop)
-        (t (error "Unknown brainfuck command: ~@c" char))))
+        ((char= char #\[) 'jump-forward)
+        ((char= char #\]) 'jump-backward)))
 
-(defun get-func (command)
-  (cond ((equal command 'inc)   #'command-increase)
-        ((equal command 'dec)   #'command-decrease)
-        ((equal command 'inc-p) #'command-increase-pointer)
-        ((equal command 'dec-p) #'command-decrease-pointer)
-        ((equal command 'output-cb)  #'command-run-output-cb)
-        ((equal command 'input-cb)  #'command-run-input-cb)
-        (t (error "Unknown brainfuck command: ~@a" command))))
+;; First: write interpreter: which is something that reads every line and executes it one by one
+(defun default-input ()
+  (progn (print "please insert new char: ") (char-int (read-char))))
 
-(defun command-increase (model)
-  (setf (aref (cells model) (pointer model)) ;; position
-        (1+ (aref (cells model) (pointer model))))) ;; new value
+(defun bf (str)
+  (let ((cells (make-array 8 :element-type 'fixnum))
+        (data-ptr 0)
+        (command-pointer 0)
+        (commands (parse-commands str)))
+    (loop :while (< command-pointer (length commands))
+       :do 
+       (case (elt commands command-pointer)
+         (inc (progn (setf (aref cells data-ptr) (1+ (aref cells data-ptr)))
+                     (incf command-pointer)))
+         (dec (progn (setf (aref cells data-ptr) (1- (aref cells data-ptr)))
+                     (incf command-pointer)))
+         (inc-p (progn (incf data-ptr)
+                       (incf command-pointer)))
+         (dec-p (progn (decf data-ptr)
+                       (incf command-pointer)))
+         (output-cb (progn (print (aref cells data-ptr))
+                           (incf command-pointer)))
+         (input-cb (progn (setf (aref cells data-ptr) (funcall #'default-input))
+                          (incf command-pointer)))
+         (jump-forward (progn (if (zerop (aref cells data-ptr)) 
+                                  (setf command-pointer (match-forward commands command-pointer))
+                                  (incf command-pointer))))
+         (jump-backward (progn (if (zerop (aref cells data-ptr))
+                                   (incf command-pointer)
+                                   (setf command-pointer (match-backward commands command-pointer)))))))
 
-(defun command-decrease (model)
-  (setf (aref (cells model) (pointer model)) ;; position
-        (1- (aref (cells model) (pointer model))))) ;; new value
-
-(defun command-increase-pointer (model)
-  ;; pointer is zero based
-  (check-type (cells model) (simple-array fixnum 1))
-  (let* ((pos (pointer model))
-         (new-pos (1+ pos)))
-    (if (= new-pos (length (cells model)))
-        (let ((new (make-array (1+ (length (cells model))) :element-type 'fixnum)))
-          (declare (optimize speed))
-          (replace new (cells model) :start1 0 :end1 new-pos)
-          (setf (cells model) new)))
-    (setf (pointer model) new-pos)))
-
-(defun command-decrease-pointer (model)
-  (setf (pointer model)
-        (1- (pointer model))))
-
-(defun command-run-output-cb (model)
-  (funcall (output-cb model) (get-current-cell-value model)))
-
-(defun command-run-input-cb (model)
-  (let ((new-val (funcall (input-cb model))))
-    (setf (aref (cells model) (pointer model))
-          new-val))) 
-
-(defun run-cmd (model c)
-  (funcall (get-func c) model))
-
-(defun loop-commands (model)
-  (butlast (loop :for c :in (commands model)
-              :collect c
-              :until (equalp c 'end-loop))))
-
-(defun run-model (model)
-  (loop :while (> (length (commands model)) 0) 
-     :do (let ((cmd (car (commands model))))
-           (setf (commands model) (cdr (commands model)))  
-           (if (eq cmd 'start-loop)
-               (let ((beg-pos (pointer model))
-                     (loop-commands (loop-commands model)))
-                 (loop :while (> (cell-value model beg-pos) 0) 
-                    :do (progn
-                          (setf (pointer model) beg-pos)
-                          (loop :for c :in loop-commands
-                             :do (run-cmd model c)))
-                    :finally (setf (commands model)
-                                   (subseq (commands model) (1+ (length loop-commands))))))
-               (run-cmd model cmd)))
-     :finally (return model)))
-
-(defun model->chars (model)
-  (loop :for c :across (cells model) :collect (code-char c)))
-
-(defun bf (bf-string)
-  (let ((model (make-instance 'model :commands (parse-commands bf-string))))
-    (run-model model)))
-
-(defun bf-print (bf-string)
-  (print (coerce (model->chars (bf bf-string)) 'string)))
-
-;;; TESTS
-
-(defun run-tests()
-  (flet ((run-test (&key str pointer cells)
-           (let ((model (bf str))
-                 (test (make-instance 'model
-                                      :pointer pointer)))
-             (progn
-               (format t "Running test: ~a ~&Expected: ~%Cells: ~a to return ~a ~&Pointer: ~a to return ~a ~2%" str cells (cells model) pointer (pointer model))
-               (assert (equalp (cells model)   cells))
-               (assert (equalp (pointer model) (pointer test)))))))
+    (list :cells cells :data-ptr data-ptr :command-pointer command-pointer :commands commands :clength (length commands))))
     
-    (progn
-      (run-test  :pointer 0 :cells #(2)    :str "++")
-      (run-test  :pointer 0 :cells #(1)    :str "++-")
-      (run-test  :pointer 1 :cells #(1 0)  :str "++->")
-      (run-test  :pointer 0 :cells #(1 0)  :str "++-><")
-      (run-test  :pointer 1 :cells #(2 5)  :str "++>+++++")
-      (run-test  :pointer 0 :cells #(0)    :str "++[-]")
-      (run-test  :pointer 1 :cells #(7 0)  :str "++>+++++[<+>-]")
-      (run-test  :pointer 0 :cells #(55 0) :str "++>+++++[<+>-]++++++++[<++++++>-]<.")
-      t)))
+  
+
+(defun match-forward (commands cp) 
+  (let ((level 0)
+        (match 0)
+        (cmds (subseq commands (1+ cp))))
+    (loop
+       :while (and (\= match 0))
+       :for c :in cmds
+       :for i :from cp :upto (length commands)
+       :do (case c
+             ((jump-forward)  (incf level))
+             ((jump-backward) (progn (if (= level 0)
+                                         (setf match i)
+                                         (decf level)))))
+       :finally (return (1+ match)))))
 
 
-(run-tests)
+(defun match-backward (commands cp) 
+  (let ((level 0)
+        (match 0)
+        (cmds (reverse (subseq commands 0 (1- cp)))))
+    (loop
+       :while (and (\= match 0))
+       :for c :in cmds
+       :for i :from cp :downto 0
+       :do (case c
+             ((jump-forward) (progn (if (= level 0)
+                                        (setf match i)
+                                        (decf level))))
+             ((jump-backward) (incf level)))
+       :finally (return (1- match)))))
 
-(pprint (parse-commands "++-><.,"))
+(subtest "Testing matching forward"
+  (is 10 (match-forward (parse-commands "+[-[[[]]]-]---------------------[]") 1))
+  (is 3  (match-forward (parse-commands "+[-]") 1)))
 
-(pprint (parse-commands "++,++"))
+(subtest "Testing matching backward"
+  (is 2 (match-backward (parse-commands "+[-]") 4))
+  (is 1 (match-backward (parse-commands "[-]")  3)))
 
-(pprint (parse-commands "++[-]++"))
+(pprint (bf "+++[-]"))
+(pprint (bf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"))
 
-(pprint (bf "++++"))
-(pprint (bf "++[-]"))
-(pprint (parse-commands "++>+++++[<+>-]+"))
-(pprint (bf "++>+++++[<+>-]+"))
-(pprint (bf "++>+++++[<+>-]++++++++"))
-(bf-print "++>+++++")
-(bf-run "++>+++++[<+>-]++++++++[<++++++>-]<.")
