@@ -197,22 +197,21 @@
 ;;; TESTS
 
 (defun run-tests()
-  (flet ((run-test (str pointer init-cont)
+  (flet ((run-test (&key str pointer cells)
            (let ((model (bf str))
                  (test (make-instance 'model
-                                      :pointer pointer
-                                      :cells (make-array 8 :initial-contents init-cont))))
+                                      :pointer pointer)))
              (progn
-               (assert (equalp (cells model)   (cells test)))
+               (assert (equalp (cells model)   cells))
                (assert (equalp (pointer model) (pointer test)))))))
     (progn
-      (run-test "++"  0 '(2 0 0 0 0 0 0 0))
-      (run-test "++-" 0 '(1 0 0 0 0 0 0 0))
-      (run-test "++->" 1 '(1 0 0 0 0 0 0 0))
-      (run-test "++-><" 0 '(1 0 0 0 0 0 0 0))
-      (run-test "++>+++++" 1 '(2 5 0 0 0 0 0 0))
-      (run-test "++[-]" 0 '(0 0 0 0 0 0 0 0))
-      (run-test "++>+++++[<+>-]" 1 '(7 0 0 0 0 0 0 0))
+      (run-test  :pointer 0 :str "++"             :cells #(2))
+      (run-test  :pointer 0 :str "++-"            :cells #(1))
+      (run-test  :pointer 1 :str "++->"           :cells #(1 0))
+      (run-test  :pointer 0 :str "++-><"          :cells #(1 0))
+      (run-test  :pointer 1 :str "++>+++++"       :cells #(2 5))
+      (run-test  :pointer 0 :str "++[-]"          :cells #(0))
+      (run-test  :pointer 1 :str "++>+++++[<+>-]" :cells #(7 0))
       t)))
 
 
@@ -236,5 +235,8 @@
 
 (bf-run "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 ;; Prints 9
+
+(pprint (bf "+"))
+(pprint (bf "+>>"))
 
 
