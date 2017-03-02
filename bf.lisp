@@ -94,7 +94,7 @@
                        (incf command-pointer)))
          (dec-p (progn (decf data-ptr)
                        (incf command-pointer)))
-         (output-cb (progn (print (aref cells data-ptr))
+         (output-cb (progn (print (code-char (aref cells data-ptr)))
                            (incf command-pointer)))
          (input-cb (progn (setf (aref cells data-ptr) (funcall #'default-input))
                           (incf command-pointer)))
