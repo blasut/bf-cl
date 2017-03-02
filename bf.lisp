@@ -78,11 +78,17 @@
     :initform '()
     :accessor commands)))
 
+(defun default-input ()
+  (progn (print "please insert new char: ") (char-int (read-char))))
+
+(defun default-output (x)
+  (format t "~a" (code-char x)))
+
 (defmethod initialize-instance :after ((m model) &rest args)
   (if (null (output-cb m))
-      (setf (output-cb m) (lambda (x) (print x))))
+      (setf (output-cb m) #'default-output))
   (if (null (input-cb m))
-      (setf (input-cb m) (lambda () (progn (print "please insert new char: ") (char-int (read-char)))))))
+      (setf (input-cb m) #'default-input)))
 
 (defmethod print-object ((m model) stream)
   (print-unreadable-object (m stream :type t)
@@ -119,8 +125,6 @@
         ((equal command 'dec-p) #'command-decrease-pointer)
         ((equal command 'output-cb)  #'command-run-output-cb)
         ((equal command 'input-cb)  #'command-run-input-cb)
-        ((equal command 'start-loop)  #'command-start-loop)
-        ((equal command 'end-loop)  #'command-noop)
         (t (error "Unknown brainfuck command: ~@a" command))))
 
 (defun command-increase (model)
@@ -155,33 +159,29 @@
     (setf (aref (cells model) (pointer model))
           new-val))) 
 
-(defun command-noop (x)
-  (declare (ignore x)))
-
 (defun run-cmd (model c)
   (funcall (get-func c) model))
-
-(defun command-start-loop (model)
-  (let ((beg-pos (pointer model))
-        (loop-commands (loop-commands model)))
-    (loop :while (> (cell-value model beg-pos) 0) 
-       :do (progn
-             (setf (pointer model) beg-pos)
-             (loop :for c :in loop-commands
-                :do (run-cmd model c)))
-       :finally (setf (commands model)
-                      (subseq (commands model) (1+ (length loop-commands)))))))
 
 (defun loop-commands (model)
   (butlast (loop :for c :in (commands model)
               :collect c
-              :until (equalp c 'end-of-loop))))
+              :until (equalp c 'end-loop))))
 
 (defun run-model (model)
   (loop :while (> (length (commands model)) 0) 
      :do (let ((cmd (car (commands model))))
            (setf (commands model) (cdr (commands model)))  
-           (run-cmd model cmd))
+           (if (eq cmd 'start-loop)
+               (let ((beg-pos (pointer model))
+                     (loop-commands (loop-commands model)))
+                 (loop :while (> (cell-value model beg-pos) 0) 
+                    :do (progn
+                          (setf (pointer model) beg-pos)
+                          (loop :for c :in loop-commands
+                             :do (run-cmd model c)))
+                    :finally (setf (commands model)
+                                   (subseq (commands model) (1+ (length loop-commands))))))
+               (run-cmd model cmd)))
      :finally (return model)))
 
 (defun model->chars (model)
@@ -192,10 +192,7 @@
     (run-model model)))
 
 (defun bf-print (bf-string)
-  (print (bf-run bf-string)))
-
-(defun bf-run (bf-string)
-  (coerce (model->chars (bf bf-string)) 'string))
+  (print (coerce (model->chars (bf bf-string)) 'string)))
 
 ;;; TESTS
 
@@ -210,13 +207,14 @@
                (assert (equalp (pointer model) (pointer test)))))))
     
     (progn
-      (run-test  :pointer 0 :str "++"             :cells #(2))
-      (run-test  :pointer 0 :str "++-"            :cells #(1))
-      (run-test  :pointer 1 :str "++->"           :cells #(1 0))
-      (run-test  :pointer 0 :str "++-><"          :cells #(1 0))
-      (run-test  :pointer 1 :str "++>+++++"       :cells #(2 5))
-      (run-test  :pointer 0 :str "++[-]"          :cells #(0))
-      (run-test  :pointer 1 :str "++>+++++[<+>-]" :cells #(7 0))
+      (run-test  :pointer 0 :cells #(2)    :str "++")
+      (run-test  :pointer 0 :cells #(1)    :str "++-")
+      (run-test  :pointer 1 :cells #(1 0)  :str "++->")
+      (run-test  :pointer 0 :cells #(1 0)  :str "++-><")
+      (run-test  :pointer 1 :cells #(2 5)  :str "++>+++++")
+      (run-test  :pointer 0 :cells #(0)    :str "++[-]")
+      (run-test  :pointer 1 :cells #(7 0)  :str "++>+++++[<+>-]")
+      (run-test  :pointer 0 :cells #(55 0) :str "++>+++++[<+>-]++++++++[<++++++>-]<.")
       t)))
 
 
@@ -228,20 +226,10 @@
 
 (pprint (parse-commands "++[-]++"))
 
-
-(bf "++,++")
-(bf "++,")
-
 (pprint (bf "++++"))
-
 (pprint (bf "++[-]"))
-
-(pprint (bf "++->+<>>"))
-
-(bf-run "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-;; Prints 9
-
-(pprint (bf "+"))
-(pprint (bf "+>>"))
-
-
+(pprint (parse-commands "++>+++++[<+>-]+"))
+(pprint (bf "++>+++++[<+>-]+"))
+(pprint (bf "++>+++++[<+>-]++++++++"))
+(bf-print "++>+++++")
+(bf-run "++>+++++[<+>-]++++++++[<++++++>-]<.")

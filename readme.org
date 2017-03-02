@@ -6,12 +6,22 @@ So far the code is shiet, but fun to try.
 
 I'm sort of liking the idea of having a "IR" with a flat list of symbols, than just doing two loops over the the "IR" and mapping to the correct command.
 
+So the idea here was experimenting with CL and BF, using oo CL to model the system.
+
+doesnt work with nested loops, and is not using bytes atm, using fixnums instead.
+
+the idea first was with a flat list, but doesnt work with nested loops, so remake to use nested loops of commands.
+
+Inline the command functions and  
+
 ** todo
  - [ ] Clean up code
  - [ ] Ignore whitespace
  - [X] Print the result using ASCII 8bit 
  - [X] Make the array dynamic in size
  - [ ] Validate the numbers, between 0-255
+ - [ ] Make nested loops work
+
   
 ** Example output from tests:
 #+BEGIN_SRC text
