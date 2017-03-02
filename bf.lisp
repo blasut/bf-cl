@@ -61,8 +61,8 @@
 ;;; Commands
 
 (defun parse-commands (string)
-  (loop :for char :across string
-     collect (parse-command char)))
+  (remove-if #'null (loop :for char :across string
+                       collect (parse-command char))))
 
 (defun parse-command (char)
   (cond ((char= char #\+) 'inc)
@@ -79,7 +79,7 @@
   (progn (print "please insert new char: ") (char-int (read-char))))
 
 (defun bf (str)
-  (let ((cells (make-array 8 :element-type 'fixnum))
+  (let ((cells (make-array 30000 :initial-element 0 :element-type '(unsigned-byte 8)))
         (data-ptr 0)
         (command-pointer 0)
         (commands (parse-commands str)))
@@ -105,7 +105,7 @@
                                    (incf command-pointer)
                                    (setf command-pointer (match-backward commands command-pointer)))))))
 
-    (list :cells cells :data-ptr data-ptr :command-pointer command-pointer :commands commands :clength (length commands))))
+    (list :data-ptr data-ptr :command-pointer command-pointer :commands commands :clength (length commands))))
     
   
 
@@ -151,3 +151,27 @@
 (pprint (bf "+++[-]"))
 (pprint (bf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"))
 
+
+(bf " ")
+
+(bf "++       Cell c0 = 2
+> +++++  Cell c1 = 5
+
+[        Start your loops with your cell pointer on the loop counter (c1 in our case)
+< +      Add 1 to c0
+> -      Subtract 1 from c1
+]        End your loops with the cell pointer on the loop counter
+
+At this point our program has added 5 to 2 leaving 7 in c0 and 0 in c1
+BUT we cannot output this value to the terminal since it's not ASCII encoded!
+
+To display the ASCII character '7' we must add 48 to the value 7!
+48 = 6 * 8 so let's use another loop to help us!
+
+++++ ++++  c1 = 8 and this will be our loop counter again
+[
+< +++ +++  Add 6 to c0
+> -        Subtract 1 from c1
+]
+< .        Print out c0 which has the value 55 which translates to '7'!
+")
