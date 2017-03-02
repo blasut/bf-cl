@@ -53,11 +53,6 @@
         :prove))
 (in-package :bf)
 
-;; Model
-
-(defun make-cells ()
-  (make-array 1 :element-type 'fixnum))  
-
 ;;; Commands
 
 (defun parse-commands (string)
@@ -86,59 +81,41 @@
     (loop :while (< command-pointer (length commands))
        :do 
        (case (elt commands command-pointer)
-         (inc (progn (setf (aref cells data-ptr) (1+ (aref cells data-ptr)))
-                     (incf command-pointer)))
-         (dec (progn (setf (aref cells data-ptr) (1- (aref cells data-ptr)))
-                     (incf command-pointer)))
-         (inc-p (progn (incf data-ptr)
-                       (incf command-pointer)))
-         (dec-p (progn (decf data-ptr)
-                       (incf command-pointer)))
-         (output-cb (progn (print (code-char (aref cells data-ptr)))
-                           (incf command-pointer)))
-         (input-cb (progn (setf (aref cells data-ptr) (funcall #'default-input))
-                          (incf command-pointer)))
-         (jump-forward (progn (if (zerop (aref cells data-ptr)) 
-                                  (setf command-pointer (match-forward commands command-pointer))
-                                  (incf command-pointer))))
-         (jump-backward (progn (if (zerop (aref cells data-ptr))
-                                   (incf command-pointer)
-                                   (setf command-pointer (match-backward commands command-pointer)))))))
+         (inc (progn (setf (aref cells data-ptr) (1+ (aref cells data-ptr)))))
+         (dec (progn (setf (aref cells data-ptr) (1- (aref cells data-ptr)))))
+         (inc-p (progn (incf data-ptr)))
+         (dec-p (progn (decf data-ptr)))
+         (output-cb (progn (print (code-char (aref cells data-ptr)))))
+         (input-cb (progn (setf (aref cells data-ptr) (funcall #'default-input))))
+         (jump-forward (progn (when (zerop (aref cells data-ptr)) 
+                                (setf command-pointer (match-forward commands command-pointer))))) 
+         (jump-backward (progn (unless (zerop (aref cells data-ptr))
+                                 (setf command-pointer (match-backward commands command-pointer))))))
+       (incf command-pointer))
 
     (when debug (list :data-ptr data-ptr :command-pointer command-pointer :commands commands :clength (length commands)))))
-    
-  
-
-(defun match-forward (commands cp) 
-  (let ((level 0)
-        (match 0)
-        (cmds (subseq commands (1+ cp))))
-    (loop
-       :while (and (\= match 0))
-       :for c :in cmds
-       :for i :from cp :upto (length commands)
-       :do (case c
-             ((jump-forward)  (incf level))
-             ((jump-backward) (progn (if (= level 0)
-                                         (setf match i)
-                                         (decf level)))))
-       :finally (return (1+ match)))))
 
 
-(defun match-backward (commands cp) 
-  (let ((level 0)
-        (match 0)
-        (cmds (reverse (subseq commands 0 (1- cp)))))
-    (loop
-       :while (and (\= match 0))
-       :for c :in cmds
-       :for i :from cp :downto 0
-       :do (case c
-             ((jump-forward) (progn (if (= level 0)
-                                        (setf match i)
-                                        (decf level))))
-             ((jump-backward) (incf level)))
-       :finally (return (1- match)))))
+;; if the byte at the data pointer is zero,
+;; then instead of moving the instruction pointer forward to the next command,
+;; jump it forward to the command *after* the matching  command.
+
+(defun match-forward (commands cp)
+  (do ((count 1 (case (elt commands i)
+                  (jump-forward (1+ count))
+                  (jump-backward (1- count))
+                  (t count)))
+       (i (1+ cp) (1+ i)))
+      ((zerop count) (1- i))))
+
+(defun match-backward (commands cp)
+  (do ((count 1 (case (elt commands i)
+                  (jump-forward (1- count))
+                  (jump-backward (1+ count))
+                  (t count)))
+       (i (1- cp) (1- i)))
+      ((zerop count) (1+ i))))
+
 
 (subtest "Testing matching forward"
   (is 10 (match-forward (parse-commands "+[-[[[]]]-]---------------------[]") 1))
