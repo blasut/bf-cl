@@ -60,18 +60,34 @@
                        collect (parse-command char))))
 
 (defun parse-command (char)
-  (cond ((char= char #\+) 'inc)
-        ((char= char #\-) 'dec)
-        ((char= char #\>) 'inc-p)
-        ((char= char #\<) 'dec-p)
-        ((char= char #\.) 'output-cb)
-        ((char= char #\,) 'input-cb)
-        ((char= char #\[) 'jump-forward)
-        ((char= char #\]) 'jump-backward)))
+  (case char
+    (#\+ 'inc)
+    (#\- 'dec)
+    (#\> 'inc-p)
+    (#\< 'dec-p)
+    (#\. 'output-cb)
+    (#\, 'input-cb)
+    (#\[ 'jump-forward)
+    (#\] 'jump-backward)))
 
-;; First: write interpreter: which is something that reads every line and executes it one by one
 (defun default-input ()
   (progn (print "please insert new char: ") (char-int (read-char))))
+
+(defun match-forward (commands cp)
+  (do ((count 1 (case (elt commands index)
+                  (jump-forward (1+ count))
+                  (jump-backward (1- count))
+                  (t count)))
+       (index (1+ cp) (1+ index)))
+      ((zerop count) (1- index))))
+
+(defun match-backward (commands cp)
+  (do ((count 1 (case (elt commands index)
+                  (jump-forward (1- count))
+                  (jump-backward (1+ count))
+                  (t count)))
+       (index (1- cp) (1- index)))
+      ((zerop count) (1+ index))))
 
 (defun bf (str &optional debug)
   (let ((cells (make-array 30000 :initial-element 0 :element-type '(unsigned-byte 8)))
@@ -92,48 +108,13 @@
          (jump-backward (unless (zerop (aref cells data-ptr))
                           (setf command-pointer (match-backward commands command-pointer)))))
        (incf command-pointer))
-
     (when debug (list :data-ptr data-ptr :command-pointer command-pointer :commands commands :clength (length commands)))))
 
-
-;; if the byte at the data pointer is zero,
-;; then instead of moving the instruction pointer forward to the next command,
-;; jump it forward to the command *after* the matching  command.
-
-(defun match-forward (commands cp)
-  (do ((count 1 (case (elt commands i)
-                  (jump-forward (1+ count))
-                  (jump-backward (1- count))
-                  (t count)))
-       (i (1+ cp) (1+ i)))
-      ((zerop count) (1- i))))
-
-(defun match-backward (commands cp)
-  (do ((count 1 (case (elt commands i)
-                  (jump-forward (1- count))
-                  (jump-backward (1+ count))
-                  (t count)))
-       (i (1- cp) (1- i)))
-      ((zerop count) (1+ i))))
-
-
-(subtest "Testing matching forward"
-  (is 10 (match-forward (parse-commands "+[-[[[]]]-]---------------------[]") 1))
-  (is 3  (match-forward (parse-commands "+[-]") 1)))
-
-(subtest "Testing matching backward"
-  (is 2 (match-backward (parse-commands "+[-]") 4))
-  (is 1 (match-backward (parse-commands "[-]")  3)))
 
 (pprint (bf "+++[-]"))
 (pprint (bf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"))
 
-
 (bf " ")
-
-
-;;;;;;;;;; TESTING
-
 
 
 (bf "++       Cell c0 = 2
