@@ -8,10 +8,11 @@ I'm sort of liking the idea of having a "IR" with a flat list of symbols, than j
 
 Ideas:
 
-- Clean up code
-- Print the result using ASCII 8bit 
-- Make the array dynamic in size
-- Validate the numbers, between 0-255
+- [ ] Clean up code
+- [ ] Ignore whitespace
+- [x] Print the result using ASCII 8bit 
+- [x] Make the array dynamic in size
+- [ ] Validate the numbers, between 0-255
   
 Example output from tests:
 
