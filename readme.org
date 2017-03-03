@@ -15,13 +15,14 @@ the idea first was with a flat list, but doesnt work with nested loops, so remak
 Inline the command functions and  
 
 ** todo
- - [ ] Clean up code
- - [ ] Ignore whitespace
+ - [X] Clean up code
+ - [X] Ignore whitespace
  - [X] Print the result using ASCII 8bit 
- - [X] Make the array dynamic in size
- - [ ] Validate the numbers, between 0-255
- - [ ] Make nested loops work
-
+ - [ ] Make the array dynamic in size
+ - [X] Make nested loops work
+ - [ ] Overflow the numbers, between 0-255
+ - [ ] Error when no matching bracket is found
+ 
   
 ** Example output from tests:
 #+BEGIN_SRC text

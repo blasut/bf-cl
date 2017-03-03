@@ -49,8 +49,8 @@
 
 (in-package :cl-user)
 (defpackage bf
-  (:use :cl
-        :prove))
+  (:use :cl))
+        ;:prove))
 (in-package :bf)
 
 ;;; Commands
@@ -114,10 +114,65 @@
 (pprint (bf "+++[-]"))
 (pprint (bf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"))
 
+
+
 (bf " ")
+;;;; Tests
+
+;; This is for testing i/o; give it a return followed by an EOF. (Try it both
+;; with file input--a file consisting only of one blank line--and with
+;; keyboard input, i.e. hit return and then ctrl-d (Unix) or ctrl-z
+;; (Windows).)
+;; It should give two lines of output; the two lines should be identical, and
+;; should be lined up one over the other. If that doesn't happen, ten is not
+;; coming through as newline on output.
+;; The content of the lines tells how input is being processed; each line
+;; should be two uppercase letters.
+;; Anything with O in it means newline is not coming through as ten on input.
+;; LK means newline input is working fine, and EOF leaves the cell unchanged
+;; (which I recommend).
+;; LB means newline input is working fine, and EOF translates as 0.
+;; LA means newline input is working fine, and EOF translates as -1.
+;; Anything else is fairly unexpected.
+(bf ">,>+++++++++,>+++++++++++[<++++++<++++++<+>>>-]<<.>.<<-.>.>.<<.")
+
+;; Goes to cell 30000 and reports from there with a #. (Verifies that the)
+;; array is big enough.
+(bf " ++++[>++++++<-]>[>+++++>+++++++<<-]>>++++<[[>[[>>+<<-]<]>>>-]>-[>+>+<<-]>] +++++[>+++++++<<++>-]>.<<. ")
 
 
-(bf "++       Cell c0 = 2
+;;These next two test the array bounds checking. Bounds checking is not
+;;essential, and in a high-level implementation it is likely to introduce
+;;extra overhead. In a low-level implementation you can get bounds checking
+;;for free by using the OS's own memory protections; this is the best
+;;solution, which may require making the array size a multiple of the page
+;;size.
+;;Anyway. These two programs measure the 'real' size of the array, in some
+;;sense, in cells left and right of the initial cell respectively. They
+;;output the result in unary; the easiest thing is to direct them to a file
+;;and measure its size, or (on Unix) pipe the output to wc. If bounds
+;;checking is present and working, the left should measure 0 and the right
+;;should be the array size minus one.
+(bf "
++[<+++++++++++++++++++++++++++++++++.]
+
++[>+++++++++++++++++++++++++++++++++.]
+")
+
+;; Tests for several obscure problems. Should output an H.
+(bf " []++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-] \"A*$\";?@![#>>+<<]>[>>]<<<<[>++<[-]]>.>. ")
+
+;; Should ideally give error message "unmatched [" or the like, and not give any output. Not essential.
+(bf "+++++[>+++++++>++<<-]>.>.[]")
+
+;; Should ideally give error message "unmatched ]" or the like, and not give any output. Not essential.
+(bf "+++++[>+++++++>++<<-]>.>.[]")
+
+
+
+;;;;
+
+(bf "++       Cell c0 = 2)
 > +++++  Cell c1 = 5
 
 [        Start your loops with your cell pointer on the loop counter (c1 in our case)
@@ -186,3 +241,54 @@ Pointer :   ^
 >>+.                    Add 1 to Cell #5 gives us an exclamation point
 >++.                    And finally a newline from Cell #6
 ")
+
+(bf "
+,+[                         Read first character and start outer character reading loop
+    -[                       Skip forward if character is 0
+        >>++++[>++++++++<-]  Set up divisor (32) for division loop
+                               (MEMORY LAYOUT: dividend copy remainder divisor quotient zero zero)
+        <+<-[                Set up dividend (x minus 1) and enter division loop
+            >+>+>-[>>>]      Increase copy and remainder / reduce divisor / Normal case: skip forward
+            <[[>+<-]>>+>]    Special case: move remainder back to divisor and increase quotient
+            <<<<<-           Decrement dividend
+        ]                    End division loop
+    ]>>>[-]+                 End skip loop; zero former divisor and reuse space for a flag
+    >--[-[<->+++[-]]]<[         Zero that flag unless quotient was 2 or 3; zero quotient; check flag
+        ++++++++++++<[       If flag then set up divisor (13) for second division loop
+                               (MEMORY LAYOUT: zero copy dividend divisor remainder quotient zero zero)
+            >-[>+>>]         Reduce divisor; Normal case: increase remainder
+            >[+[<+>-]>+>>]   Special case: increase remainder / move it back to divisor / increase quotient
+            <<<<<-           Decrease dividend
+        ]                    End division loop
+        >>[<+>-]             Add remainder back to divisor to get a useful 13
+        >[                   Skip forward if quotient was 0
+            -[               Decrement quotient and skip forward if quotient was 1
+                -<<[-]>>     Zero quotient and divisor if quotient was 2
+            ]<<[<<->>-]>>    Zero divisor and subtract 13 from copy if quotient was 1
+        ]<<[<<+>>-]          Zero divisor and add 13 to copy if quotient was 0
+    ]                        End outer skip loop (jump to here if ((character minus 1)/32) was not 2 or 3)
+    <[-]                     Clear remainder from first division if second division was skipped
+    <.[-]                    Output ROT13ed character from copy and clear it
+    <-,+                     Read next character
+]                            End character reading loop
+
+")
+
+
+(bf "
+[bsort.b -- bubble sort
+(c) 2016 daniel b. cristofani
+http://brainfuck.org/]
+
+>>,[>>,]<<[
+[<<]>>>>[
+<<[>+<<+>-]
+>>[>+<<<<[->]>[<]>>-]
+<<<[[-]>>[>+<-]>>[<<<+>>>-]]
+>>[[<+>-]>>]<
+]<<[>>+<<-]<<
+]>>>>[.>>]
+
+[this program sorts the bytes of its input by bubble sort.]
+")
+
