@@ -89,6 +89,20 @@
        (index (1- cp) (1- index)))
       ((zerop count) (1+ index))))
 
+
+;; SLIME:
+;;  in the debugger
+;;    v - visual line of code
+;;    D - dissasembler
+;;    i - inspecting
+;;    e - evaluate
+;;    c - continue
+;;    a - abort
+;;  in the inspector:
+;;    . - show source code
+;;    g - refresh
+
+
 (defun bf (str &optional debug)
   (let ((cells (make-array 30000 :initial-element 0 :element-type '(unsigned-byte 8)))
         (data-ptr 0)
@@ -167,7 +181,6 @@
 
 ;; Should ideally give error message "unmatched ]" or the like, and not give any output. Not essential.
 (bf "+++++[>+++++++>++<<-]>.>.[]")
-
 
 
 ;;;;
