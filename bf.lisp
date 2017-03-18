@@ -6,7 +6,8 @@
 (defpackage bf
   (:use :cl)
   (:export :parse
-           :compile-brainfuck))
+           :compile-brainfuck
+           :defbf))
 (in-package :bf)
 
 ;; Very nice, an inspiration

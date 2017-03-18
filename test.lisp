@@ -79,7 +79,7 @@
 ;; LB means newline input is working fine, and EOF translates as 0.
 ;; LA means newline input is working fine, and EOF translates as -1.
 ;; Anything else is fairly unexpected.
-(compile-brainfuck ">,>+++++++++,>+++++++++++[<++++++<++++++<+>>>-]<<.>.<<-.>.>.<<.")
+(defbf io ">,>+++++++++,>+++++++++++[<++++++<++++++<+>>>-]<<.>.<<-.>.>.<<.")
 
 ;; Goes to cell 30000 and reports from there with a #. (Verifies that the)
 ;; array is big enough.
@@ -116,7 +116,7 @@
 
 ;;;;
 
-(compile-brainfuck "++       Cell c0 = 2)
+(defbf number-7 "++       Cell c0 = 2)
 > +++++  Cell c1 = 5
 
 [        Start your loops with your cell pointer on the loop counter (c1 in our case)
@@ -140,7 +140,7 @@ To display the ASCII character '7' we must add 48 to the value 7!
 
 
 
-(compile-brainfuck "
+(defbf hello-world "
 [ This program prints 'Hello World!' and a newline to the screen, its
   length is 106 active command characters. [It is not the shortest.]
 
@@ -186,7 +186,7 @@ Pointer :   ^
 >++.                    And finally a newline from Cell #6
 ")
 
-(compile-brainfuck "
+(defbf wat "
 ,+[                         Read first character and start outer character reading loop
     -[                       Skip forward if character is 0
         >>++++[>++++++++<-]  Set up divisor (32) for division loop
@@ -219,7 +219,7 @@ Pointer :   ^
 ")
 
 
-(compile-brainfuck "
+(defbf bubbe-sort "
 [bsort.b -- bubble sort
 (c) 2016 daniel b. cristofani
 http://brainfuck.org/]
