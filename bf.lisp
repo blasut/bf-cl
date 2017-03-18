@@ -42,25 +42,35 @@
 (defun parse-tokens (tokens)
   (let ((string-of-tokens (loop :for token :in tokens
                              :collecting (ecase token
-                                           (inc "(bf-op \"+\")")
-                                           (dec "(bf-op \"-\")")
-                                           (inc-p "(bf-op \">\")")
-                                           (dec-p "(bf-op \"<\")")
-                                           (output-cb "(bf-op \".\")")
-                                           (input-cb "(bf-op \",\")")
+                                           (inc "(bf-op-inc 1)")
+                                           (dec "(bf-op-dec 1)")
+                                           (inc-p "(bf-op-incp 1)")
+                                           (dec-p "(bf-op-decp 1)")
+                                           (output-cb "(bf-op-output)")
+                                           (input-cb "(bf-op-input)")
                                            (jump-forward "(bf-loop ")
                                            (jump-backward ")")) :into fragments
                              :finally (return
                                         (format nil "(bf-program ~a)" (apply #'concatenate 'string fragments))))))
     (read-from-string string-of-tokens)))
 
-(defmacro bf-op (op)
-  (cond ((string= op "+") `(incf (aref cells ptr)))
-        ((string= op "-") `(decf (aref cells ptr)))
-        ((string= op ">") `(incf ptr))
-        ((string= op "<") `(decf ptr))
-        ((string= op ".") `(write-char (code-char (aref cells ptr))))
-        ((string= op ",") `(setf (aref cells ptr) (char-code (read-char))))))
+(defmacro bf-op-inc (val)
+  `(incf (aref cells ptr) ,val))
+
+(defmacro bf-op-dec (val)
+  `(decf (aref cells ptr) ,val))
+
+(defmacro bf-op-incp (val)
+  `(incf ptr ,val))
+
+(defmacro bf-op-decp (val)
+  `(decf ptr ,val))
+
+(defmacro bf-op-output ()
+  `(write-char (code-char (aref cells ptr))))
+
+(defmacro bf-op-input ()
+  `(setf (aref cells ptr) (char-code (read-char))))
 
 (defmacro bf-loop (&body body)
   `(do ((val (aref cells ptr) (aref cells ptr)))
