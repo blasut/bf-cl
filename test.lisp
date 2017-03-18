@@ -47,6 +47,23 @@
 
 ;;;; Tests
 
+(compile-brainfuck "+++[-]")
+(compile-brainfuck "+++[-]")
+(compile-brainfuck "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+(compile-brainfuck "+[-].")
+
+(parse "+[-].+++[-].")
+(compile-brainfuck "+[-].+++[-].")
+
+(compile-brainfuck "[]")
+
+(compile-brainfuck "[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-]")
+
+(compile-brainfuck "[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-] \"A*$\";?@![#>>+<<]>[>>]<<<<[>++<[-]]>.>. ")
+
+(compile-brainfuck "[<]")
+
+
 ;; This is for testing i/o; give it a return followed by an EOF. (Try it both
 ;; with file input--a file consisting only of one blank line--and with
 ;; keyboard input, i.e. hit return and then ctrl-d (Unix) or ctrl-z

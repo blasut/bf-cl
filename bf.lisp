@@ -78,22 +78,6 @@
   (declare (optimize (debug 3)))
   (parse src))
 
-(compile-brainfuck "+++[-]")
-(compile-brainfuck "+++[-]")
-(compile-brainfuck "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-(compile-brainfuck "+[-].")
-
-(parse "+[-].+++[-].")
-(compile-brainfuck "+[-].+++[-].")
-
-(compile-brainfuck "[]")
-
-(compile-brainfuck "[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-]")
-
-(compile-brainfuck "[]++++++++++[>>+>+>++++++[<<+<+++>>>-]<<<<-] \"A*$\";?@![#>>+<<]>[>>]<<<<[>++<[-]]>.>. ")
-
-(compile-brainfuck "[<]")
-
 (defmacro defbf (name src)
   `(defun ,name ()
      (compile-brainfuck ,src)))
